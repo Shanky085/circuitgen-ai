@@ -1,32 +1,109 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Activity, Search, Zap, List, Cpu, Settings, RefreshCw, MessageSquare, Loader2, Wand2, BookOpen } from 'lucide-react';
+import { Activity, Search, Zap, List, Cpu, Settings, RefreshCw, MessageSquare, Loader2, Wand2, BookOpen, Sun, Moon, Palette } from 'lucide-react';
 
 // --- API CONFIGURATION ---
-const apiKey = process.env.REACT_APP_GEMINI_API_KEY; 
+const apiKey = ""; // System provides this at runtime
 
 // --- CONFIGURATION ---
 const CELL = 15;
 const OFF_X = 140; 
 const OFF_Y = 30;
 
-const COLORS = {
-  BG: '#121212',
-  BOARD_BODY: '#e5e7eb',
-  BOARD_GROOVE: '#d1d5db',
-  PIN_HOLE: '#9ca3af',
-  VCC_RAIL: '#f87171',
-  GND_RAIL: '#60a5fa',
-  IC_BODY: '#1f2937',
-  IC_TEXT: '#f3f4f6',
-  WIRE_RED: '#ef4444',
-  WIRE_BLACK: '#111827',
-  WIRE_BLUE: '#3b82f6',
-  WIRE_ORANGE: '#f97316',
-  WIRE_GREEN: '#22c55e',
-  WIRE_PURPLE: '#a855f7',
-  WIRE_YELLOW: '#eab308',
-  LED_ON: '#ef4444',
-  LED_OFF: '#450a0a'
+// --- THEME DEFINITIONS ---
+const THEMES = {
+  light: {
+    id: 'light',
+    label: 'Light Lab',
+    icon: Sun,
+    colors: {
+      BG: '#f8fafc',
+      HEADER: '#ffffff',
+      SIDEBAR: '#ffffff',
+      BOARD_BODY: '#ffffff',
+      BOARD_GROOVE: '#e2e8f0',
+      PIN_HOLE: '#cbd5e1',
+      VCC_RAIL: '#fecaca',
+      GND_RAIL: '#bfdbfe',
+      IC_BODY: '#1e293b',
+      IC_TEXT: '#f8fafc',
+      WIRE_RED: '#ef4444',
+      WIRE_BLACK: '#0f172a',
+      WIRE_BLUE: '#2563eb',
+      WIRE_ORANGE: '#f97316',
+      WIRE_GREEN: '#16a34a',
+      WIRE_PURPLE: '#9333ea',
+      WIRE_YELLOW: '#ca8a04',
+      LED_ON: '#ef4444',
+      LED_OFF: '#991b1b',
+      TEXT_MAIN: '#0f172a',
+      TEXT_SEC: '#64748b',
+      BORDER: '#e2e8f0',
+      BTN_BG: '#2563eb',
+      BTN_TXT: '#ffffff'
+    }
+  },
+  dark: {
+    id: 'dark',
+    label: 'Dark Pro',
+    icon: Moon,
+    colors: {
+      BG: '#121212',
+      HEADER: '#1e293b',
+      SIDEBAR: '#1e293b',
+      BOARD_BODY: '#e5e7eb',
+      BOARD_GROOVE: '#d1d5db',
+      PIN_HOLE: '#9ca3af',
+      VCC_RAIL: '#f87171',
+      GND_RAIL: '#60a5fa',
+      IC_BODY: '#1f2937',
+      IC_TEXT: '#f3f4f6',
+      WIRE_RED: '#ef4444',
+      WIRE_BLACK: '#111827',
+      WIRE_BLUE: '#3b82f6',
+      WIRE_ORANGE: '#f97316',
+      WIRE_GREEN: '#22c55e',
+      WIRE_PURPLE: '#a855f7',
+      WIRE_YELLOW: '#eab308',
+      LED_ON: '#ef4444',
+      LED_OFF: '#450a0a',
+      TEXT_MAIN: '#f8fafc',
+      TEXT_SEC: '#94a3b8',
+      BORDER: '#334155',
+      BTN_BG: '#16a34a',
+      BTN_TXT: '#ffffff'
+    }
+  },
+  blueprint: {
+    id: 'blueprint',
+    label: 'Blueprint',
+    icon: Palette,
+    colors: {
+      BG: '#172554',
+      HEADER: '#1e3a8a',
+      SIDEBAR: '#1e3a8a',
+      BOARD_BODY: '#3b82f6',
+      BOARD_GROOVE: '#2563eb',
+      PIN_HOLE: '#1d4ed8',
+      VCC_RAIL: '#fca5a5',
+      GND_RAIL: '#93c5fd',
+      IC_BODY: '#172554',
+      IC_TEXT: '#93c5fd',
+      WIRE_RED: '#fca5a5',
+      WIRE_BLACK: '#020617',
+      WIRE_BLUE: '#ffffff',
+      WIRE_ORANGE: '#fdba74',
+      WIRE_GREEN: '#86efac',
+      WIRE_PURPLE: '#d8b4fe',
+      WIRE_YELLOW: '#fde047',
+      LED_ON: '#fde047',
+      LED_OFF: '#854d0e',
+      TEXT_MAIN: '#dbeafe',
+      TEXT_SEC: '#93c5fd',
+      BORDER: '#1e40af',
+      BTN_BG: '#3b82f6',
+      BTN_TXT: '#ffffff'
+    }
+  }
 };
 
 // --- HELPER TO GENERATE WIRES FOR VCC/GND ---
@@ -55,7 +132,7 @@ const RECIPES = {
   // --- 1. BASIC GATES ---
   'basic_gates': {
     title: 'Basic Logic Gates',
-    desc: 'Verify Truth Tables for AND, OR, NOT, NAND, NOR, XOR.',
+    desc: 'Verify Truth Tables for AND, OR.',
     explanation: 'Demonstrates basic 7400-series logic gates. \n\n- AND (7408): Output High only if both inputs High. \n- OR (7432): Output High if at least one input High.',
     bom: ['1x 7408 (AND)', '1x 7432 (OR)', 'Switches & LEDs'],
     chips: [{id: 'u1', type: '7408', x: 20}, {id: 'u2', type: '7432', x: 35}],
@@ -535,13 +612,18 @@ const Wire = ({ p1, p2, color }) => {
   );
 };
 
-export default function CircuitDesignerPro() {
+export default function App() {
   const [activeRecipe, setActiveRecipe] = useState(RECIPES['basic_gates']);
   const [inputs, setInputs] = useState([0, 0, 0, 0, 0, 0]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
   const [explanation, setExplanation] = useState('');
   const [explaining, setExplaining] = useState(false);
+  
+  // Theme State
+  const [themeId, setThemeId] = useState('light'); // Default Light!
+  const currentTheme = THEMES[themeId];
+  const COLORS = currentTheme.colors; // Dynamic Colors
 
   // Auto-load explanation when recipe changes
   useEffect(() => {
@@ -603,57 +685,125 @@ export default function CircuitDesignerPro() {
   };
 
   return (
-    <div className="flex flex-col h-screen text-gray-200 font-sans overflow-hidden" style={{ backgroundColor: COLORS.BG }}>
-      <div className="flex items-center justify-between px-6 py-4 bg-gray-900 border-b border-gray-800 z-10">
+    <div className="flex flex-col h-screen font-sans overflow-hidden transition-colors duration-300" 
+         style={{ backgroundColor: COLORS.BG, color: COLORS.TEXT_MAIN }}>
+      
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-6 py-4 border-b z-10 shadow-sm" 
+           style={{ backgroundColor: COLORS.HEADER || COLORS.BG, borderColor: COLORS.BORDER }}>
+        
         <div className="flex items-center gap-3">
           <Activity className="text-green-500" />
-          <div><h1 className="text-lg font-bold">CircuitGen <span className="text-green-500">Ultimate</span></h1><p className="text-xs text-gray-500">Powered by Gemini</p></div>
-        </div>
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative">
-            <input type="text" placeholder="Type: 'JK Flip Flop', 'Mux', 'Full Adder'..." value={search} onChange={(e)=>setSearch(e.target.value)} className="bg-gray-800 border border-gray-700 rounded pl-3 pr-10 py-1.5 text-sm w-80 text-gray-200 focus:outline-none focus:border-green-500" />
-            {loading && <Loader2 className="absolute right-3 top-1.5 animate-spin text-green-500" size={16} />}
+          <div>
+            <h1 className="text-lg font-bold">CircuitGen <span className="text-green-500">Ultimate</span></h1>
+            <p className="text-xs" style={{ color: COLORS.TEXT_SEC }}>Powered by Gemini</p>
           </div>
-          <button type="submit" disabled={loading} className="bg-green-600 hover:bg-green-500 px-4 rounded text-white font-bold text-sm flex items-center gap-2">{loading ? '...' : <><Wand2 size={14}/> LOAD</>}</button>
-        </form>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative">
+              <input type="text" placeholder="Type: 'JK Flip Flop', 'Mux', 'Full Adder'..." value={search} onChange={(e)=>setSearch(e.target.value)} 
+                className="border rounded pl-3 pr-10 py-1.5 text-sm w-64 focus:outline-none focus:border-green-500 transition-colors"
+                style={{ backgroundColor: COLORS.BG, borderColor: COLORS.BORDER, color: COLORS.TEXT_MAIN }}
+              />
+              {loading && <Loader2 className="absolute right-3 top-1.5 animate-spin text-green-500" size={16} />}
+            </div>
+            <button type="submit" disabled={loading} className="px-4 rounded font-bold text-sm flex items-center gap-2 transition-colors"
+              style={{ backgroundColor: COLORS.BTN_BG || '#22c55e', color: COLORS.BTN_TXT }}>
+              {loading ? '...' : <><Wand2 size={14}/> LOAD</>}
+            </button>
+          </form>
+
+          {/* THEME SWITCHER */}
+          <div className="flex bg-gray-200 rounded p-1" style={{ backgroundColor: COLORS.BORDER }}>
+            {Object.values(THEMES).map(theme => {
+              const Icon = theme.icon;
+              return (
+                <button
+                  key={theme.id}
+                  onClick={() => setThemeId(theme.id)}
+                  className={`p-1.5 rounded transition-all ${themeId === theme.id ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                  title={theme.label}
+                >
+                  <Icon size={16} />
+                </button>
+              )
+            })}
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-80 bg-gray-900 border-r border-gray-800 p-6 flex flex-col gap-6 overflow-y-auto">
-          <div><h2 className="text-xl font-bold mb-1 text-white">{activeRecipe.title}</h2><p className="text-sm text-gray-400">{activeRecipe.desc}</p></div>
+        {/* SIDEBAR */}
+        <div className="w-80 border-r p-6 flex flex-col gap-6 overflow-y-auto"
+             style={{ backgroundColor: COLORS.SIDEBAR, borderColor: COLORS.BORDER }}>
+          <div>
+            <h2 className="text-xl font-bold mb-1">{activeRecipe.title}</h2>
+            <p className="text-sm" style={{ color: COLORS.TEXT_SEC }}>{activeRecipe.desc}</p>
+          </div>
           
-          <div className="bg-blue-950/20 p-4 rounded-lg border border-blue-800/50">
-             <div className="flex items-center gap-2 mb-2 text-blue-300">
+          <div className="p-4 rounded-lg border shadow-sm" style={{ backgroundColor: COLORS.BG, borderColor: COLORS.BORDER }}>
+             <div className="flex items-center gap-2 mb-2 text-blue-500 font-bold">
                <BookOpen size={16} />
-               <span className="text-xs font-bold uppercase tracking-wider">How it Works</span>
+               <span className="text-xs uppercase tracking-wider">How it Works</span>
              </div>
              {explanation ? (
-               <div className="text-xs text-blue-100 leading-relaxed whitespace-pre-line animate-in fade-in">{explanation}</div>
+               <div className="text-xs leading-relaxed whitespace-pre-line animate-in fade-in" style={{ color: COLORS.TEXT_MAIN }}>{explanation}</div>
              ) : (
-               <button onClick={handleExplain} disabled={explaining} className="w-full py-2 bg-blue-900/50 hover:bg-blue-900 border border-blue-700 rounded text-blue-200 text-xs font-bold flex items-center justify-center gap-2 transition-colors">
+               <button onClick={handleExplain} disabled={explaining} 
+                 className="w-full py-2 border rounded text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                 style={{ borderColor: COLORS.BORDER, color: COLORS.TEXT_SEC, backgroundColor: COLORS.BG }}>
                 {explaining ? <Loader2 className="animate-spin" size={14}/> : <MessageSquare size={14}/>} {explaining ? 'Analyzing...' : 'Generate Explanation'}
                </button>
              )}
           </div>
 
-          <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-             <div className="flex items-center gap-2 mb-3 text-blue-400"><List size={16} /><span className="text-xs font-bold uppercase">BOM</span></div>
-             <ul className="space-y-2">{activeRecipe.bom.map((item, i) => <li key={i} className="text-sm text-gray-300 flex items-center gap-2"><span className="w-1.5 h-1.5 bg-gray-500 rounded-full"></span>{item}</li>)}</ul>
+          <div className="p-4 rounded-lg border shadow-sm" style={{ backgroundColor: COLORS.BG, borderColor: COLORS.BORDER }}>
+             <div className="flex items-center gap-2 mb-3 text-blue-500 font-bold"><List size={16} /><span className="text-xs uppercase">BOM</span></div>
+             <ul className="space-y-2">
+               {activeRecipe.bom.map((item, i) => (
+                 <li key={i} className="text-sm flex items-center gap-2" style={{ color: COLORS.TEXT_MAIN }}>
+                   <span className="w-1.5 h-1.5 rounded-full bg-gray-400"></span>{item}
+                 </li>
+               ))}
+             </ul>
           </div>
-          <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-             <div className="flex items-center gap-2 mb-3 text-green-400"><Zap size={16} /><span className="text-xs font-bold uppercase">Simulation</span></div>
+
+          <div className="p-4 rounded-lg border shadow-sm" style={{ backgroundColor: COLORS.BG, borderColor: COLORS.BORDER }}>
+             <div className="flex items-center gap-2 mb-3 text-green-500 font-bold"><Zap size={16} /><span className="text-xs uppercase">Simulation</span></div>
              <div className="space-y-4">
-                <div className="flex gap-2 flex-wrap">{activeRecipe.inputs.map((lbl, i) => <button key={i} onClick={() => {const n=[...inputs];n[i]=n[i]?0:1;setInputs(n)}} className={`px-2 py-1 rounded text-xs font-mono font-bold border ${inputs[i]?'bg-green-900 border-green-600':'bg-gray-800 border-gray-600'}`}>{lbl}={inputs[i]}</button>)}</div>
-                <div className="flex gap-2 flex-wrap">{activeRecipe.outputs.map((lbl, i) => <div key={i} className={`px-2 py-1 rounded text-xs font-mono font-bold border ${outputs[i]?'bg-red-900 border-red-600':'bg-gray-800 border-gray-600'}`}>{lbl}={outputs[i]}</div>)}</div>
+                <div className="flex gap-2 flex-wrap">
+                  {activeRecipe.inputs.map((lbl, i) => (
+                    <button key={i} onClick={() => {const n=[...inputs];n[i]=n[i]?0:1;setInputs(n)}} 
+                      className={`px-2 py-1 rounded text-xs font-mono font-bold border transition-all ${inputs[i] ? 'bg-green-600 text-white border-green-700' : ''}`}
+                      style={!inputs[i] ? { borderColor: COLORS.BORDER, color: COLORS.TEXT_SEC } : {}}
+                    >
+                      {lbl}={inputs[i]}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  {activeRecipe.outputs.map((lbl, i) => (
+                    <div key={i} 
+                      className={`px-2 py-1 rounded text-xs font-mono font-bold border ${outputs[i] ? 'bg-red-600 text-white border-red-700' : ''}`}
+                      style={!outputs[i] ? { borderColor: COLORS.BORDER, color: COLORS.TEXT_SEC } : {}}
+                    >
+                      {lbl}={outputs[i]}
+                    </div>
+                  ))}
+                </div>
              </div>
           </div>
         </div>
 
-        <div className="flex-1 bg-black relative overflow-auto flex items-center justify-center">
-           <div className="relative" style={{ width: 1200, height: 600 }}>
+        {/* CANVAS */}
+        <div className="flex-1 relative overflow-auto flex items-center justify-center" style={{ backgroundColor: COLORS.BG }}>
+           <div className="relative shadow-2xl rounded-xl overflow-hidden" style={{ width: 1200, height: 600 }}>
              <svg width="100%" height="100%" viewBox="0 0 1200 600">
                 <g transform="translate(20, 100)">
-                  <rect width="100" height="150" rx="6" fill="#e4e4e7" /><rect x="10" y="15" width="80" height="40" rx="2" fill="#27272a" />
+                  <rect width="100" height="150" rx="6" fill="#e4e4e7" stroke={COLORS.BORDER} strokeWidth="2" />
+                  <rect x="10" y="15" width="80" height="40" rx="2" fill="#27272a" />
                   <text x="50" y="40" textAnchor="middle" fill="#22c55e" fontFamily="monospace" fontSize="16" fontWeight="bold">5.0V</text>
                   <circle cx="30" cy="120" r="6" fill="#18181b" /><circle cx="70" cy="120" r="6" fill="#ef4444" />
                   <path d="M 70 120 C 100 120, 100 52, 150 52" stroke="#ef4444" strokeWidth="4" fill="none" /><path d="M 30 120 C 60 120, 60 300, 150 300" stroke="#1f2937" strokeWidth="4" fill="none" />
@@ -694,7 +844,7 @@ export default function CircuitDesignerPro() {
                    return (
                      <g key={i} transform={`translate(${pos.x}, ${pos.y})`}>
                         <path d="M -50 15 L -10 15" stroke="#9ca3af" strokeWidth="2" />
-                        <rect x="-40" y="11" width="20" height="8" fill="#e5e7eb" stroke="#d1d5db" rx="2" />
+                        <rect x="-40" y="11" width="20" height="8" fill={COLORS.BOARD_BODY} stroke="#d1d5db" rx="2" />
                         <rect x="-35" y="11" width="3" height="8" fill="#d97706" /><rect x="-30" y="11" width="3" height="8" fill="#d97706" /><rect x="-25" y="11" width="3" height="8" fill="#78350f" />
                         <line x1="0" y1="0" x2="0" y2="15" stroke="#9ca3af" strokeWidth="2" /><line x1="-8" y1="0" x2="-8" y2="15" stroke="#9ca3af" strokeWidth="2" />
                         <circle cx="-4" cy="0" r="8" fill={isOn ? COLORS.LED_ON : COLORS.LED_OFF} />
@@ -705,8 +855,13 @@ export default function CircuitDesignerPro() {
                 })}
                 {activeRecipe.wires.map((w, i) => {
                    let p1 = {x:0, y:0}, p2 = {x:0, y:0};
-                   if (w.s === 'VCC') p1 = getCoords('RAIL_VCC'); else if (w.s === 'GND') p1 = getCoords('RAIL_GND'); else if (typeof w.s === 'string' && w.s.includes('SW')) p1 = getCoords('SW', w.s); else p1 = getCoords('PIN', w.s, activeRecipe.chips);
-                   if (typeof w.e === 'string' && w.e.includes('LED')) p2 = getCoords('LED', w.e); else p2 = getCoords('PIN', w.e, activeRecipe.chips);
+                   if (w.s === 'VCC') p1 = getCoords('RAIL_VCC', null, activeRecipe.chips); 
+                   else if (w.s === 'GND') p1 = getCoords('RAIL_GND', null, activeRecipe.chips); 
+                   else if (typeof w.s === 'string' && w.s.includes('SW')) p1 = getCoords('SW', w.s, activeRecipe.chips); 
+                   else p1 = getCoords('PIN', w.s, activeRecipe.chips);
+
+                   if (typeof w.e === 'string' && w.e.includes('LED')) p2 = getCoords('LED', w.e, activeRecipe.chips); 
+                   else p2 = getCoords('PIN', w.e, activeRecipe.chips);
                    return <Wire key={i} p1={p1} p2={p2} color={COLORS[w.color] || COLORS.WIRE_GREEN} />
                 })}
              </svg>
